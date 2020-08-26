@@ -1,0 +1,18 @@
+.photo-item {
+  margin: 40px 0;
+  padding-top: 20px;
+  border-top: 1px solid #DDD;
+}
+
+.photo-item__image {
+  display: block;
+  max-width: 100%;
+}
+
+.page-load-status {
+  display: none; /* hidden by default */
+  padding-top: 20px;
+  border-top: 1px solid #DDD;
+  text-align: center;
+  color: #777;
+}

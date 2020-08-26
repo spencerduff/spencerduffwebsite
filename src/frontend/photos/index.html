@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<link rel="stylesheet" href="stylesheet.css">
+<body>
+<p><a href="http://www.spencerduff.com">[Home]</a>&nbsp;<a href="http://spencerduff.com/music/index.html">[Music]</a>&nbsp;<a href="http://spencerduff.com/resume/index.html">[Resume]</a>&nbsp;<a href="http://spencerduff.com/blog/index.html">[Blog]</a><a href="http://spencerduff.com/photos/index.html">[Photos]</a></p>
+<h1>Random Photo Scrolling</h1>
+<div class="container"></div>
+
+<!-- status elements -->
+<div class="page-load-status">
+    <div class="loader-ellips infinite-scroll-request">
+        <span class="loader-ellips__dot"></span>
+        <span class="loader-ellips__dot"></span>
+        <span class="loader-ellips__dot"></span>
+        <span class="loader-ellips__dot"></span>
+    </div>
+    <p class="infinite-scroll-last">End of content</p>
+    <p class="infinite-scroll-error">No more pages to load</p>
+</div>
+<script src="https://unpkg.com/infinite-scroll@3/dist/infinite-scroll.pkgd.js"></script>
+<script type="text/html" id="photo-item-template">
+    <div class="photo-item">
+        <img class="photo-item__image" src="{{url}}" />
+    </div>
+</script>
+<script src="script.js"></script>
+</body>
+</html>
