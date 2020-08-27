@@ -17,10 +17,36 @@
     <p class="infinite-scroll-last">End of content</p>
     <p class="infinite-scroll-error">No more pages to load</p>
 </div>
+
+<div id="successModal" class="deleteModal">
+    <!-- Modal content -->
+    <div class="modal-content">
+        <span class="close" onclick="closeSuccessModal()">&times;</span>
+        Successfully Deleted Photo
+    </div>
+</div>
+
+<div id="badPasswordModal" class="deleteModal">
+    <!-- Modal content -->
+    <div class="modal-content">
+        <span class="close" onclick="closeBadPasswordModal()">&times;</span>
+        Bad Password
+    </div>
+</div>
+
 <script src="https://unpkg.com/infinite-scroll@3/dist/infinite-scroll.pkgd.js"></script>
 <script type="text/html" id="photo-item-template">
     <div class="photo-item">
-        <img class="photo-item__image" src="{{url}}" />
+        <img class="photo-item__image" src={{url}} id={{id}} onclick="displayModal({{id}})" />
+    </div>
+    <div id="deleteModal{{id}}" class="deleteModal">
+        <!-- Modal content -->
+        <div class="modal-content">
+            <span id="close{{id}}" class="close" onclick="closeModal({{id}})">&times;</span>
+            Password for deleting this photo:
+            <input type="password" id="passwordText{{id}}" value="">
+            <input type="button" onclick="deletePhoto({{id}})" value="Delete Photo">
+        </div>
     </div>
 </script>
 <script src="script.js"></script>

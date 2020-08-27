@@ -15,14 +15,18 @@ for (var i = 0; i < 975; ++i) {
 }
 
 infScroll.on( 'load', function( response ) {
-  var photo = {"url":'https://spencerduff.com/photos/' + getRandomPhoto() + '.jpg'}
+  var id = getRandomPhoto();
+  var photo = { "url":'https://spencerduff.com/photos/' + id + '.jpg',
+                "id": id }
   // convert HTML string into elements
   var itemHTML = getItemHTML(photo);
   // convert HTML string into elements
   proxyElem.innerHTML = itemHTML;
   // append item elements
   var items = proxyElem.querySelectorAll('.photo-item');
+  var modals = proxyElem.querySelectorAll('.deleteModal');
   infScroll.appendItems( items );
+  infScroll.appendItems( modals );
 });
 
 // load initial page
@@ -61,4 +65,63 @@ function getRandomPhoto() {
 
 function getRandomInt(max) {
   return Math.floor(Math.random() * Math.floor(max));
+}
+
+var modal;
+
+function displayModal(id) {
+  modal = document.getElementById("deleteModal"+id);
+  modal.style.display = "block";
+}
+
+function closeModal(id) {
+  modal = document.getElementById("deleteModal"+id);
+  modal.style.display = "none";
+}
+
+function displaySuccessModal() {
+  modal = document.getElementById("successModal");
+  modal.style.display = "block";
+}
+
+function closeSuccessModal() {
+  modal = document.getElementById("successModal");
+  modal.style.display = "none";
+}
+
+function displayBadPasswordModal() {
+  modal = document.getElementById("badPasswordModal");
+  modal.style.display = "block";
+}
+
+function closeBadPasswordModal() {
+  modal = document.getElementById("badPasswordModal");
+  modal.style.display = "none";
+}
+
+window.onclick = function(event) {
+  if (event.target == modal) {
+    modal.style.display = "none";
+  }
+}
+
+function deletePhoto(id) {
+  var password = document.getElementById("passwordText" + id).value;
+  var body = {"password": password, "id": id};
+  callAwsLambdaFunctionDeletePhoto(body);
+  var modal = document.getElementById("deleteModal"+id);
+  modal.style.display = "none";
+}
+
+function callAwsLambdaFunctionDeletePhoto(body) {
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      displaySuccessModal();
+    } else if (this.readyState == 4 && this.status == 401){
+      displayBadPasswordModal();
+    }
+  };
+  xhttp.open("DELETE", "https://h8mb4pgqk4.execute-api.us-west-2.amazonaws.com/Prod/deletephoto", true);
+  xhttp.send(JSON.stringify(body));
 }
