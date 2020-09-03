@@ -43,6 +43,15 @@
   width: 80%;
 }
 
+/* Modal Content */
+.modal-content-bad {
+  background-color: #ff0000;
+  margin: auto;
+  padding: 20px;
+  border: 1px solid #888;
+  width: 80%;
+}
+
 /* The Close Button */
 .close {
   color: #aaaaaa;

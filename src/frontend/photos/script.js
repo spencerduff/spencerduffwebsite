@@ -5,6 +5,7 @@ var infScroll = new InfiniteScroll( '.container', {
   responseType: 'text',
   status: '.scroll-status',
   history: false,
+  scrollThreshold: 5000,
 });
 
 var proxyElem = document.createElement('div');
@@ -29,8 +30,11 @@ infScroll.on( 'load', function( response ) {
   infScroll.appendItems( modals );
 });
 
+const INITIAL_PHOTO_NUM = 3;
 // load initial page
-infScroll.loadNextPage();
+for (var i = 0; i < INITIAL_PHOTO_NUM; ++i) {
+    infScroll.loadNextPage();
+}
 
 var itemTemplateSrc = document.querySelector('#photo-item-template').innerHTML;
 
@@ -99,15 +103,31 @@ function closeBadPasswordModal() {
   modal.style.display = "none";
 }
 
+function displayUndeletableModal() {
+  modal = document.getElementById("undeletablePhotoModal");
+  modal.style.display = "block";
+}
+
+function closeUndeletableModal() {
+  modal = document.getElementById("undeletablePhotoModal");
+  modal.style.display = "none";
+}
+
 window.onclick = function(event) {
   if (event.target == modal) {
     modal.style.display = "none";
   }
 }
 
+const undeletablePhotoIds = [184];
+
 function deletePhoto(id) {
   var password = document.getElementById("passwordText" + id).value;
   var body = {"password": password, "id": id};
+  if (undeletablePhotoIds.includes(id)){
+    displayUndeletableModal();
+    return;
+  }
   callAwsLambdaFunctionDeletePhoto(body);
   var modal = document.getElementById("deleteModal"+id);
   modal.style.display = "none";
