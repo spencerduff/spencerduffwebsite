@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        div.graph {
+        height: 500px;
+    }
+    </style>
+</head>
+<p><a href="http://www.spencerduff.com">[Home]</a>&nbsp;<a href="http://spencerduff.com/music/index.html">[Music]</a>&nbsp;<a href="http://spencerduff.com/resume/index.html">[Resume]</a>&nbsp;<a href="http://spencerduff.com/blog/index.html">[Blog] <a href="http://spencerduff.com/quake/index.html">[Quake]</a></p>
+<h1>Margin Mortgage Calculator</h1>
+<h2>About</h2>
+<p>This is a calculator for showing the returns on assets through 3 different home buying strategies. 1. Renting and not buying a home. 2. Buying a home with margin for the down payment. 3. Buying a home and selling equities for the down payment.</p>
+<p>The calculator does not account for the capital gains paid on liquidation of equities to pay for the down payment. This is another drag on returns that must be accounted for.</p>
+<p>The beginning values are baseline assumptions that make sense in the 2021 environment of interest rates. I recommend reading <a href="http://spencerduff.com/blog/entries/2021/03/09.html">my post</a> on this strategy to understand the potential pitfalls. It should be understood that the increased returns are due to the increased risk gained from the leverage utilized. Risk mitigation strategies should be considered before attempting this strategy.</p>
+<label for="houseValue">House Value:</label>
+<input type="text" id="houseValue" name="houseValue" placeholder="600000" value="600000"><br><br>
+<label for="homeExpectedReturn">Home Expected Real Annual Return:</label>
+<input type="text" id="homeExpectedReturn" name="homeExpectedReturn" placeholder="0.01" value="0.01"><br><br>
+<label for="downpaymentPercent">Downpayment as a Percentage:</label>
+<input type="text" id="downpaymentPercent" name="downpaymentPercent" placeholder="0.20" value="0.20"><br><br>
+<label for="mortgageInterest">Mortgage Interest Rate:</label>
+<input type="text" id="mortgageInterest" name="mortgageInterest" placeholder="0.03" value="0.03"><br><br>
+<label for="loanTerm">Loan Term in Years:</label>
+<input type="text" id="loanTerm" name="loanTerm" placeholder="30" value="30"><br><br><br><br>
+<label for="stockValue">Value of Stocks:</label>
+<input type="text" id="stockValue" name="stockValue" placeholder="600000" value="600000"><br><br>
+<label for="stockExpectedReturn">Stock Expected Return:</label>
+<input type="text" id="stockExpectedReturn" name="stockExpectedReturn" placeholder="0.07" value="0.07"><br><br>
+<label for="rentCost">Cost of Rent:</label>
+<input type="text" id="rentCost" name="rentCost" placeholder="1700" value="1700"><br><br>
+<label for="marginInterest">Margin Interest Rate:</label>
+<input type="text" id="marginInterest" name="marginInterest" placeholder="0.0145" value="0.0145"><br><br><br><br>
+
+<input type="button" onclick="calc()" value="Calculate Returns">
+
+<div id="ReturnsGraph" class="graph"></div>
+
+<script src="https://www.gstatic.com/charts/loader.js"></script>
+<script src="script.js"></script>
