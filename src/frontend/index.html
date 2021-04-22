@@ -1,3 +1,7 @@
+<!DOCTYPE html>
+<html lang="en">
+<link rel="stylesheet" href="stylesheet.css">
+<body>
 <p><a href="http://www.spencerduff.com">[Home]</a>&nbsp;<a href="http://spencerduff.com/music/index.html">[Music]</a>&nbsp;<a href="http://spencerduff.com/resume/index.html">[Resume]</a>&nbsp;<a href="http://spencerduff.com/blog/index.html">[Blog]</a> <a href="http://spencerduff.com/tools/index.html">[Tools]</a> <a href="http://spencerduff.com/quake/index.html">[Quake]</a></p>
 <h1>Spencer Duff's Really Simple Website</h1>
 <h2>Professional</h2>
@@ -12,3 +16,56 @@
 <p><a href="http://spencerduff.com/tools/index.html">Tools</a></p>
 <h3>Quake</h3>
 <p><a href="http://spencerduff.com/quake/index.html">Quake Stuff</a></p>
+
+<div class="bottomContactInfo">
+    <p>Want to reach out, give me feedback, or comment?<input id="contactInitiate" type="submit" onclick="displaySuccessModal()" value="Contact"></p>
+</div>
+
+<div id="contactModal" class="contactModal">
+    <!-- Modal content -->
+    <div class="modal-content">
+        <span class="close" onclick="closeSuccessModal()">&times;</span>
+        <p>
+            Your Email (required)
+            <br>
+            <input id="emailField" type="text" name="your-email" aria-required="true" aria-invalid="false" value size="40">
+        </p>
+        <p>
+            Subject
+            <br>
+            <input id="subjectField" type="text" name="your-subject" aria-required="true" aria-invalid="false" value size="40">
+        </p>
+        <p>
+            Your Message
+            <br>
+            <textarea id="messageField" name="your-message" aria-required="true" aria-invalid="false" cols="40" rows="20"></textarea>
+        </p>
+        <p>
+            Human Check: Five take away 3 is:
+            <br>
+            <input id="captchaCheck" type="text" name="your-captcha" aria-required="true" aria-invalid="false" autocomplete="off" value size="40">
+        </p>
+        <p>
+            <input id="sendEmail" type="submit" onclick="sendEmail()" value="Send">
+        </p>
+    </div>
+</div>
+
+<div id="doneRequestModal" class="contactModal">
+    <!-- Modal content -->
+    <div class="modal-content">
+        <span class="close" onclick="closeDoneModal()">&times;</span>
+        Done!
+    </div>
+</div>
+
+<div id="badRequestModal" class="contactModal">
+    <!-- Modal content -->
+    <div class="modal-content">
+        <span class="close" onclick="closeBadRequestModal()">&times;</span>
+        Bad Request
+    </div>
+</div>
+<script src="script.js"></script>
+</body>
+</html>
