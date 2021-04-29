@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<head>
+    <style>
+        div.graph {
+        height: 500px;
+    }
+    </style>
+</head>
+<p><a href="http://www.spencerduff.com">[Home]</a>&nbsp;<a href="http://spencerduff.com/music/index.html">[Music]</a>&nbsp;<a href="http://spencerduff.com/resume/index.html">[Resume]</a>&nbsp;<a href="http://spencerduff.com/blog/index.html">[Blog]</a> <a href="http://spencerduff.com/tools/index.html">[Tools]</a> <a href="http://spencerduff.com/quake/index.html">[Quake]</a></p>
+<h1>Potential Returns Calculator</h1>
+<h2>About</h2>
+<p>I made this little tool to model returns over years with mean expected returns and standard deviations. It might be fun to play around with. It's posted in the&nbsp; <a href="http://spencerduff.com/blog/entries/2021/04/28.html">Blog</a> section as well.</p>
+<p>Some interesting values:</p>
+<p><strong>S&amp;P500 index fund</strong></p>
+<p>Mean: 9% (nominal), Std Dev: 15%</p>
+<p><strong>Total US Bond Index Fund</strong></p>
+<p>Mean: 4.7%, Std Dev: 3.5%</p>
+<label for="expectedReturn">Expected Return:</label>
+<input type="text" id="expectedReturn" name="expectedReturn" placeholder=".09" value=".09"><br><br>
+<label for="stdDeviation">Standard Deviation:</label>
+<input type="text" id="stdDeviation" name="stdDeviation" placeholder="0.15" value="0.15"><br><br>
+<label for="years">Years of Investment:</label>
+<input type="text" id="years" name="years" placeholder="30" value="30"><br><br>
+<label for="value">Value of Investment:</label>
+<input type="text" id="value" name="value" placeholder="100000" value="100000"><br><br>
+
+<input type="button" onclick="calc()" value="Calculate Returns">
+
+<div id="NominalGraph" class="graph"></div>
+<div id="ReturnsGraph" class="graph"></div>
+
+<script src="https://www.gstatic.com/charts/loader.js"></script>
+<script src="script.js"></script>
