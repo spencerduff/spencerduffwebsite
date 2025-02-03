@@ -4,6 +4,7 @@ from app.dal.database import MatchRanksAndStatsDAO
 from app.dal.database_objects import MatchInfo, PlayerMatchRanking, RatingAndRank, PlayerRanking
 from app.dal.idatabase import IDatabase
 from app.util.name_sanitizer import sanitize_name
+from app.util.processor_utils import calc_winning_team, generate_match_user_id
 
 ts = trueskill.TrueSkill(mu=1500, sigma=350, beta=750, tau=3)
 
@@ -12,10 +13,10 @@ def process_ratings_for_match(parsed_json: dict[str, any], match_info: MatchInfo
     # create and get player info
     players_json_list: list[dict] = parsed_json['players']
     if match_info.mode == "1on1":
-        winning_player: str = __calc_winning_team([], players_json_list)
+        winning_player: str = calc_winning_team([], players_json_list)
         players = [__get_or_create_player(p, match_info, 1 if p['name'] == winning_player else 0) for p in players_json_list]
     else:
-        winning_team: str = __calc_winning_team(parsed_json['teams'], players_json_list)
+        winning_team: str = calc_winning_team(parsed_json['teams'], players_json_list)
         players = [__get_or_create_player(p, match_info, 1 if p['team'] == winning_team else 0) for p in players_json_list]
 
     # assign winners and losers
@@ -79,35 +80,9 @@ def __trueskill_ratings(winners_rar: list[RatingAndRank], losers_rar: list[Ratin
     return winners_ret, losers_ret
 
 
-def __calc_winning_team(teams: list[str], players_json_list: list[dict]) -> str:
-    if not teams:
-        best_score: int = -99
-        best_player: str = ""
-
-        for p in players_json_list:
-            best_score = p['stats']['frags'] if p['stats']['frags'] >= best_score else best_score
-            best_player = p['name'] if p['stats']['frags'] >= best_score else best_player
-
-        return best_player
-    winning_score = None
-    winning_team = None
-    for team in teams:
-        players_on_team: list[dict] = list(filter(lambda x: x['team'] == team, players_json_list))
-        total_score: int = 0
-        for player in players_on_team:
-            total_score += player['stats']['frags']
-        if winning_score is None:
-            winning_score = total_score
-            winning_team = team
-        elif total_score > winning_score:
-            winning_score = total_score
-            winning_team = team
-    return winning_team
-
-
 def __get_or_create_player(player_dict: dict[str, any], match_info: MatchInfo, win: int) -> PlayerMatchRanking:
     name: str = sanitize_name(player_dict['name'])
-    match_user_id: str = match_info.match_id + name
+    match_user_id: str = generate_match_user_id(name=name, match_id=match_info.match_id)
     login: str = player_dict['login']
 
     db_dal: IDatabase = MatchRanksAndStatsDAO()

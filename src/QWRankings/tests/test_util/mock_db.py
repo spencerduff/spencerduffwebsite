@@ -1,4 +1,5 @@
 from app.dal.database import PlayerRanking, RatingAndRank, PlayerMatchRanking
+from app.dal.database_objects import PlayerStatsMatch
 from app.dal.idatabase import IDatabase
 
 
@@ -23,3 +24,5 @@ class TestDAL(IDatabase):
     def is_match_processed(self, match_id: str) -> bool:
         return False
 
+    def upload_stats(self, player_stats: list[PlayerStatsMatch]) -> None:
+        pass
