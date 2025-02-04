@@ -1,13 +1,18 @@
+import logging
 from datetime import datetime
 import os
 
 import psycopg2 as psycopg2
+from psycopg2 import DatabaseError
 
 from app.dal.database_objects import PlayerRanking, RatingAndRank, PlayerMatchRanking, PlayerStatsMatch, WeaponStats, \
     ItemStats
 from app.dal.idatabase import IDatabase
 
 ALL_MAPS: str = "ALL"
+DELIMITER: str = ":"
+
+logger = logging.getLogger(__name__)
 
 
 def match_exists_query(match_id: str) -> str:
@@ -102,8 +107,9 @@ def add_stats_for_player_query(player_stats_match: PlayerStatsMatch) -> str:
         '{_create_weapon_primary_key(player_stats_match.match_user_id, 'lg')}');
         """
 
+
 def _create_weapon_primary_key(match_user_id: str, weapon: str) -> str:
-    return match_user_id+weapon
+    return match_user_id + DELIMITER + weapon
 
 
 def update_rating_for_player_query(name: str, rating: float, ratings_deviation: float, mode: str,
@@ -135,6 +141,12 @@ class MatchRanksAndStatsDAO(IDatabase):
                 port=os.environ.get("POSTGRES_DATABASE_PORT")
             )
         return cls.__conn
+
+    @classmethod
+    def close_conn(cls):
+        if cls.__conn is not None:
+            cls.__conn.close()
+            cls.__conn = None
 
     @classmethod
     def is_match_processed(cls, match_id: str) -> bool:
@@ -196,98 +208,106 @@ class MatchRanksAndStatsDAO(IDatabase):
     @classmethod
     def update_ratings(cls, players: list[PlayerMatchRanking]) -> None:
         cur = cls.get_conn().cursor()
-        for p in players:
-            cur.execute(add_game_for_player_query(
-                match_id=p.match_info.match_id,
-                date=p.match_info.date,
-                mode=p.match_info.mode,
-                name=p.name,
-                rating=p.overall_rating_and_rank.rating,
-                win=p.win,
-                map=p.match_info.map,
-                ratings_deviation=p.overall_rating_and_rank.ratings_deviation,
-            ))
-            cur.execute(update_rating_for_player_query(
-                name=p.name,
-                mode=p.match_info.mode,
-                rating=p.overall_rating_and_rank.rating,
-                ratings_deviation=p.overall_rating_and_rank.ratings_deviation,
-                match_map=ALL_MAPS
-            ))
-            cur.execute(update_rating_for_player_query(
-                name=p.name,
-                mode=p.match_info.mode,
-                rating=p.map_rating_and_rank.rating,
-                ratings_deviation=p.map_rating_and_rank.ratings_deviation,
-                match_map=p.match_info.map
-            ))
+        try:
+            for p in players:
+                cur.execute(add_game_for_player_query(
+                    match_id=p.match_info.match_id,
+                    date=p.match_info.date,
+                    mode=p.match_info.mode,
+                    name=p.name,
+                    rating=p.overall_rating_and_rank.rating,
+                    win=p.win,
+                    map=p.match_info.map,
+                    ratings_deviation=p.overall_rating_and_rank.ratings_deviation,
+                ))
+                cur.execute(update_rating_for_player_query(
+                    name=p.name,
+                    mode=p.match_info.mode,
+                    rating=p.overall_rating_and_rank.rating,
+                    ratings_deviation=p.overall_rating_and_rank.ratings_deviation,
+                    match_map=ALL_MAPS
+                ))
+                cur.execute(update_rating_for_player_query(
+                    name=p.name,
+                    mode=p.match_info.mode,
+                    rating=p.map_rating_and_rank.rating,
+                    ratings_deviation=p.map_rating_and_rank.ratings_deviation,
+                    match_map=p.match_info.map
+                ))
+        except DatabaseError as dbe:
+            logger.warning(f"DatabaseError: {dbe}")
+            cls.get_conn().rollback()
         cls.get_conn().commit()
 
     @classmethod
     def upload_stats(cls, player_stats: list[PlayerStatsMatch]) -> None:
         cur = cls.get_conn().cursor()
-        for p in player_stats:
-            # Weapon Stats
-            cur.execute(
-                add_weapon_stats_for_player_query(
-                    match_user_id_weapon=_create_weapon_primary_key(match_user_id=p.match_user_id, weapon='axe'),
-                    name=p.name,
-                    weapon_stats=p.player_stats.axe_stats
-                ))
-            cur.execute(
-                add_weapon_stats_for_player_query(
-                    match_user_id_weapon=_create_weapon_primary_key(match_user_id=p.match_user_id, weapon='sg'),
-                    name=p.name,
-                    weapon_stats=p.player_stats.sg_stats
-                ))
-            cur.execute(
-                add_weapon_stats_for_player_query(
-                    match_user_id_weapon=_create_weapon_primary_key(match_user_id=p.match_user_id, weapon='ssg'),
-                    name=p.name,
-                    weapon_stats=p.player_stats.ssg_stats
-                ))
-            cur.execute(
-                add_weapon_stats_for_player_query(
-                    match_user_id_weapon=_create_weapon_primary_key(match_user_id=p.match_user_id, weapon='ng'),
-                    name=p.name,
-                    weapon_stats=p.player_stats.ng_stats
-                ))
-            cur.execute(
-                add_weapon_stats_for_player_query(
-                    match_user_id_weapon=_create_weapon_primary_key(match_user_id=p.match_user_id, weapon='sng'),
-                    name=p.name,
-                    weapon_stats=p.player_stats.sng_stats
-                ))
-            cur.execute(
-                add_weapon_stats_for_player_query(
-                    match_user_id_weapon=_create_weapon_primary_key(match_user_id=p.match_user_id, weapon='gl'),
-                    name=p.name,
-                    weapon_stats=p.player_stats.gl_stats
-                ))
-            cur.execute(
-                add_weapon_stats_for_player_query(
-                    match_user_id_weapon=_create_weapon_primary_key(match_user_id=p.match_user_id, weapon='rl'),
-                    name=p.name,
-                    weapon_stats=p.player_stats.rl_stats
-                ))
-            cur.execute(
-                add_weapon_stats_for_player_query(
-                    match_user_id_weapon=_create_weapon_primary_key(match_user_id=p.match_user_id, weapon='lg'),
-                    name=p.name,
-                    weapon_stats=p.player_stats.lg_stats
-                ))
+        try:
+            for p in player_stats:
+                # Weapon Stats
+                cur.execute(
+                    add_weapon_stats_for_player_query(
+                        match_user_id_weapon=_create_weapon_primary_key(match_user_id=p.match_user_id, weapon='axe'),
+                        name=p.name,
+                        weapon_stats=p.player_stats.axe_stats
+                    ))
+                cur.execute(
+                    add_weapon_stats_for_player_query(
+                        match_user_id_weapon=_create_weapon_primary_key(match_user_id=p.match_user_id, weapon='sg'),
+                        name=p.name,
+                        weapon_stats=p.player_stats.sg_stats
+                    ))
+                cur.execute(
+                    add_weapon_stats_for_player_query(
+                        match_user_id_weapon=_create_weapon_primary_key(match_user_id=p.match_user_id, weapon='ssg'),
+                        name=p.name,
+                        weapon_stats=p.player_stats.ssg_stats
+                    ))
+                cur.execute(
+                    add_weapon_stats_for_player_query(
+                        match_user_id_weapon=_create_weapon_primary_key(match_user_id=p.match_user_id, weapon='ng'),
+                        name=p.name,
+                        weapon_stats=p.player_stats.ng_stats
+                    ))
+                cur.execute(
+                    add_weapon_stats_for_player_query(
+                        match_user_id_weapon=_create_weapon_primary_key(match_user_id=p.match_user_id, weapon='sng'),
+                        name=p.name,
+                        weapon_stats=p.player_stats.sng_stats
+                    ))
+                cur.execute(
+                    add_weapon_stats_for_player_query(
+                        match_user_id_weapon=_create_weapon_primary_key(match_user_id=p.match_user_id, weapon='gl'),
+                        name=p.name,
+                        weapon_stats=p.player_stats.gl_stats
+                    ))
+                cur.execute(
+                    add_weapon_stats_for_player_query(
+                        match_user_id_weapon=_create_weapon_primary_key(match_user_id=p.match_user_id, weapon='rl'),
+                        name=p.name,
+                        weapon_stats=p.player_stats.rl_stats
+                    ))
+                cur.execute(
+                    add_weapon_stats_for_player_query(
+                        match_user_id_weapon=_create_weapon_primary_key(match_user_id=p.match_user_id, weapon='lg'),
+                        name=p.name,
+                        weapon_stats=p.player_stats.lg_stats
+                    ))
 
-            # Item Stats
-            cur.execute(
-                add_item_stats_for_player_query(
-                    match_user_id=p.match_user_id,
-                    name=p.name,
-                    item_stats=p.player_stats.item_stats
-                ))
+                # Item Stats
+                cur.execute(
+                    add_item_stats_for_player_query(
+                        match_user_id=p.match_user_id,
+                        name=p.name,
+                        item_stats=p.player_stats.item_stats
+                    ))
 
-            # Player Stats
-            cur.execute(
-                add_stats_for_player_query(
-                    player_stats_match=p,
-                ))
+                # Player Stats
+                cur.execute(
+                    add_stats_for_player_query(
+                        player_stats_match=p,
+                    ))
+        except DatabaseError as dbe:
+            logger.warning(f"DatabaseError: {dbe}")
+            cls.get_conn().rollback()
         cls.get_conn().commit()

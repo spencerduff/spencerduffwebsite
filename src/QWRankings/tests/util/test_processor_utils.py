@@ -65,4 +65,4 @@ def test_calc_winning_team(teams: list[str], players_json_list: list[dict], expe
 
 
 def test_generate_match_id() -> None:
-    assert generate_match_user_id(name="test", match_id="2012-12-12") == '2012-12-12test'
+    assert generate_match_user_id(name="test", match_id="2012-12-12") == '2012-12-12:test'

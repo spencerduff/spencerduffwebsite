@@ -1,3 +1,6 @@
+DELIMITER = ":"
+
+
 def calc_winning_team(teams: list[str], players_json_list: list[dict]) -> str:
     if not teams:
         best_score: int = -99
@@ -25,4 +28,4 @@ def calc_winning_team(teams: list[str], players_json_list: list[dict]) -> str:
 
 
 def generate_match_user_id(name: str, match_id: str) -> str:
-    return match_id + name
+    return match_id + DELIMITER + name
