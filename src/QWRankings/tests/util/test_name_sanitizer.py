@@ -1,6 +1,6 @@
 import pytest as pytest
 
-from app.util.name_sanitizer import sanitize_name
+from app.util.name_utils import sanitize_name
 
 test_names_and_results = [
     (

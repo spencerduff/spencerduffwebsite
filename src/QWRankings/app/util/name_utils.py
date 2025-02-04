@@ -1,3 +1,6 @@
+TEAM_PREFIX = "TEAM:"
+
+
 def sanitize_name(name: str) -> str:
     lookup_table = {
         0: "=",
@@ -32,3 +35,8 @@ def sanitize_name(name: str) -> str:
             )
         )
     ).replace("'", "")
+
+
+def create_team_name(team_name: str) -> str:
+    sanitized_name = sanitize_name(team_name)
+    return TEAM_PREFIX + sanitized_name

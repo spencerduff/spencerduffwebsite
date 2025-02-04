@@ -9,7 +9,7 @@ from itertools import combinations
 import requests
 
 from app.dal.database import MatchRanksAndStatsDAO
-from app.dal.database_objects import MatchInfo, PlayerMatchRanking, PlayerRanking
+from app.dal.database_objects import MatchInfo, PlayerMatchRanking
 from app.dal.idatabase import IDatabase
 from app.processor.ratings_processor import process_ratings_for_match
 from app.processor.stats_processor import process_stats_for_match
@@ -18,6 +18,10 @@ logger = logging.getLogger(__name__)
 
 
 def process_last_n_matches(mode: str = '4on4', n: int = 500) -> bool:
+    if n > 500:
+        n = 500
+    if n < 1:
+        n = 1
     http_res = requests.post(url="https://ncsphkjfominimxztjip.supabase.co/functions/v1/demos",
                              headers={"Content-Type": "application/json"},
                              data=json.dumps({"mode": mode}))
@@ -25,11 +29,7 @@ def process_last_n_matches(mode: str = '4on4', n: int = 500) -> bool:
     str_res = str(str_res)[:-1]  # Remove end quote '
     games = str_res.split('\\n')
     games.reverse()
-    counter: int = 0
-    for http_url in games:
-        counter += 1
-        if counter > n:
-            break
+    for http_url in games[500-n:]:
         request_url = http_url.replace('.gz', '.ktxstats.json')
         try:
             with urllib.request.urlopen(request_url) as f:
@@ -45,7 +45,10 @@ def process_last_n_matches(mode: str = '4on4', n: int = 500) -> bool:
 
 
 def process_local_data(directory_path: str) -> bool:
+    first_time = timeit.default_timer()
     all_files = {}
+    logger.warning("Aggregating files...")
+    start_time = timeit.default_timer()
     for root, dirs, curr_files in os.walk(directory_path):
         for f in curr_files:
             path_to_file = os.path.join(root, f)
@@ -56,6 +59,7 @@ def process_local_data(directory_path: str) -> bool:
                     all_files[date] = data
                 except Exception as e:
                     logger.warning(f"Could not process file: {path_to_file}, Exception: {e}")
+    logger.warning(f"Aggregating files took {timeit.default_timer() - start_time}")
 
     logger.warning("Sorting files...")
     start_time = timeit.default_timer()
@@ -64,10 +68,12 @@ def process_local_data(directory_path: str) -> bool:
 
     counter: int = 0
 
+    logger.warning("Processing data...")
+    start_time = timeit.default_timer()
     for _date, data in sorted_files.items():
         counter += 1
         if counter % 500 == 0:
-            logger.warning(f"Processed {counter} files so far.")
+            logger.warning(f"{counter / len(all_files)}% Done. Processed {counter} out of {len(all_files)} files so far.")
         demo_text = json.loads(data)["demo"]
         if "duel" in demo_text:
             mode = "1on1"
@@ -88,11 +94,20 @@ def process_local_data(directory_path: str) -> bool:
             logger.warning(f"Failed to process data: {data}, exception: {e}")
             continue
 
+    logger.warning(f"Processing data took {timeit.default_timer() - start_time} for {len(all_files)} number of files")
+
+    logger.warning(f"Total time to run: {timeit.default_timer() - first_time}")
     return True
 
 
 def balance_teams(players: list[str], map_choice: str = 'ALL') -> tuple[
     list[tuple[str, float]], list[tuple[str, float]]]:
+    ratings: dict[str, float] = __get_ratings(players=players, map_choice=map_choice)
+    best_team, other_team = __partition_teams(players=players, ratings=ratings)
+    return __sort_players(players=best_team, ratings=ratings), __sort_players(players=other_team, ratings=ratings)
+
+
+def __get_ratings(players: list[str], map_choice: str) -> dict[str, float]:
     db_dal: IDatabase = MatchRanksAndStatsDAO()
     ratings: dict[str, float] = {}
     for name in players:
@@ -102,14 +117,26 @@ def balance_teams(players: list[str], map_choice: str = 'ALL') -> tuple[
         else:
             ratings[name] = db_dal.get_rating_and_rank(name=name, mode='4on4',
                                                        match_map=map_choice).map_rating_and_rank.rating
+    return ratings
+
+
+def __partition_teams(players: list[str], ratings=None) -> tuple[list, list]:
     team_length: int = len(players) // 2
+    if ratings is None:
+        return players[team_length:], players[:team_length]
     best_rating: float = sum(ratings.values()) / 2
 
     best_team = list(min(combinations(players, team_length),
                          key=lambda team: abs(sum([ratings[n] for n in team]) - best_rating))[:4])
     other_team = [p for p in players if p not in best_team]
+    return best_team, other_team
 
-    return __sort_players(best_team, ratings), __sort_players(other_team, ratings)
+
+def check_teams(players: list[str], map_choice: str = 'ALL') -> tuple[
+    list[tuple[str, float]], list[tuple[str, float]]]:
+    ratings: dict[str, float] = __get_ratings(players=players, map_choice=map_choice)
+    first_team, second_team = __partition_teams(players=players)
+    return __sort_players(players=first_team, ratings=ratings), __sort_players(players=second_team, ratings=ratings)
 
 
 def __sort_players(players: list[str], ratings: dict[str, float]) -> list[tuple[str, float]]:

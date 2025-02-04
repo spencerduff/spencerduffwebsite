@@ -4,7 +4,7 @@ from functools import reduce
 from app.dal.database import MatchRanksAndStatsDAO
 from app.dal.database_objects import MatchInfo, PlayerStatsMatch, PlayerStats, ItemStats, WeaponStats
 from app.dal.idatabase import IDatabase
-from app.util.name_sanitizer import sanitize_name
+from app.util.name_utils import sanitize_name, create_team_name
 from app.util.processor_utils import calc_winning_team, generate_match_user_id
 
 
@@ -12,37 +12,50 @@ def process_stats_for_match(parsed_json: dict[str, any], match_info: MatchInfo) 
     # create and get player stats info
     players_json_list: list[dict] = parsed_json['players']
 
-    deduped_json_list = _dedupe_players(players_json_list)
+    deduped_players_json_list = _dedupe_on_key(players_json_list, key="name")
 
     if match_info.mode == "1on1":
-        winning_player: str = calc_winning_team([], deduped_json_list)
-        players: list[PlayerStatsMatch] = [__create_player_stats(p, match_info, 1 if p['name'] == winning_player else 0)
-                                           for p in
-                                           deduped_json_list]
+        winning_player: str = calc_winning_team([], deduped_players_json_list)
+        players: list[PlayerStatsMatch] = [
+            __create_stats(stats_dict=p, name=sanitize_name(p["name"]), login=p["login"], match_info=match_info,
+                           win=1 if p['name'] == winning_player else 0)
+            for p in
+            deduped_players_json_list]
+        teams: list[PlayerStatsMatch] = []
     else:
-        winning_team: str = calc_winning_team(parsed_json['teams'], deduped_json_list)
-        players: list[PlayerStatsMatch] = [__create_player_stats(p, match_info, 1 if p['team'] == winning_team else 0)
-                                           for p in
-                                           deduped_json_list]
+        winning_team: str = calc_winning_team(parsed_json['teams'], deduped_players_json_list)
+        players: list[PlayerStatsMatch] = [
+            __create_stats(stats_dict=p, name=sanitize_name(p["name"]), login=p["login"], match_info=match_info,
+                           win=1 if p['team'] == winning_team else 0)
+            for p in
+            deduped_players_json_list]
+        deduped_team_json_list = _dedupe_on_key(players_json_list, key="team")
+        teams: list[PlayerStatsMatch] = [
+            __create_stats(stats_dict=p, name=create_team_name(p["team"]), login="", match_info=match_info,
+                           win=1 if p['team'] == winning_team else 0)
+            for p in
+            deduped_team_json_list]
 
     # upload to DB
     db_dal: IDatabase = MatchRanksAndStatsDAO()
     db_dal.upload_stats(player_stats=players)
+    db_dal.upload_stats(player_stats=teams)
 
     return players
 
 
-def __create_player_stats(player_dict: dict[str, any], match_info: MatchInfo, win: int) -> PlayerStatsMatch:
-    name: str = sanitize_name(player_dict['name'])
+def __create_stats(stats_dict: dict[str, any], name: str, login: str, match_info: MatchInfo,
+                   win: int) -> PlayerStatsMatch:
+    name: str = sanitize_name(name)
     match_user_id: str = generate_match_user_id(name=name, match_id=match_info.match_id)
-    login: str = player_dict['login']
+    login: str = login
     return PlayerStatsMatch(
         match_info=match_info,
         match_user_id=match_user_id,
         name=name,
         login=login,
         win=win,
-        player_stats=__gen_player_stats(player_dict),
+        player_stats=__gen_player_stats(stats_dict),
     )
 
 
@@ -141,7 +154,7 @@ def __combine_op(k, a, b):
     elif isinstance(a, dict) and isinstance(b, dict):
         return combine_dicts(a, b)
     else:
-        return b
+        return b if b else a
 
 
 def combine_dicts(a, b, op=__combine_op):
@@ -149,19 +162,19 @@ def combine_dicts(a, b, op=__combine_op):
                 [(k, op(k, a[k], b[k])) for k in set(b) & set(a)])
 
 
-def _dedupe_players(players: list[dict]) -> list[dict]:
-    players_names = list(map(lambda p: p["name"], players))
-    counts = Counter(players_names)
-    duplicates = [k for k, v in counts.items() if v > 1]
+def _dedupe_on_key(players: list[dict], key: str = "name") -> list[dict]:
+    list_of_keys = list(map(lambda p: p[key], players))
+    counts_of_keys = Counter(list_of_keys)
+    duplicates = [k for k, v in counts_of_keys.items() if v > 1]
 
     result = []
 
     for dupe in duplicates:
-        to_combine = list(filter(lambda p: p["name"] == dupe, players))
+        to_combine = list(filter(lambda p: p[key] == dupe, players))
         result.append(reduce(combine_dicts, to_combine, {}))
 
     for p in players:
-        if p["name"] not in duplicates:
+        if p[key] not in duplicates:
             result.append(p)
 
     return result

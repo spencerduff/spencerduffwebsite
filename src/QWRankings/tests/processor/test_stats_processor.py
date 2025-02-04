@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 from app.dal.database_objects import MatchInfo, PlayerStatsMatch
 from app.processor.match_processor import create_match_info
-from app.processor.stats_processor import process_stats_for_match, combine_dicts, _dedupe_players
+from app.processor.stats_processor import process_stats_for_match, _dedupe_on_key
 from tests.data.expected_outputs import EXPECTED_4on4_DM3_STATS_OUPUT
 from tests.data.inputs import TEST_COMBINE_DICTS
 from tests.test_util.mock_db import TestDAL
@@ -39,7 +39,15 @@ class TestStatsProcessor(unittest.TestCase):
     def test__dedupe_players(self) -> None:
         test_dicts = TEST_COMBINE_DICTS
         assert len(test_dicts) == 9
-        res = _dedupe_players(test_dicts)
+        res = _dedupe_on_key(test_dicts)
         assert len(res) == 8
         assert res[0]["stats"]["frags"] == 54
         assert res[0]["name"] == "Coò"
+
+    def test__dedupe_teams(self) -> None:
+        test_dicts = TEST_COMBINE_DICTS
+        assert len(test_dicts) == 9
+        res = _dedupe_on_key(test_dicts, key="team")
+        assert len(res) == 2
+        assert res[1]["stats"]["frags"] == 180
+        assert res[1]["team"] == "tp"

@@ -3,10 +3,10 @@ import trueskill
 from app.dal.database import MatchRanksAndStatsDAO
 from app.dal.database_objects import MatchInfo, PlayerMatchRanking, RatingAndRank, PlayerRanking
 from app.dal.idatabase import IDatabase
-from app.util.name_sanitizer import sanitize_name
+from app.util.name_utils import sanitize_name, create_team_name
 from app.util.processor_utils import calc_winning_team, generate_match_user_id
 
-ts = trueskill.TrueSkill(mu=1500, sigma=350, beta=750, tau=3)
+ts = trueskill.TrueSkill(mu=1500, sigma=500, beta=250, tau=5, draw_probability=0.0)
 
 
 def process_ratings_for_match(parsed_json: dict[str, any], match_info: MatchInfo) -> list[PlayerMatchRanking]:
@@ -15,20 +15,28 @@ def process_ratings_for_match(parsed_json: dict[str, any], match_info: MatchInfo
     if match_info.mode == "1on1":
         winning_player: str = calc_winning_team([], players_json_list)
         players = [__get_or_create_player(p, match_info, 1 if p['name'] == winning_player else 0) for p in players_json_list]
+        teams: list[PlayerMatchRanking] = []
     else:
         winning_team: str = calc_winning_team(parsed_json['teams'], players_json_list)
         players = [__get_or_create_player(p, match_info, 1 if p['team'] == winning_team else 0) for p in players_json_list]
+        teams: list[PlayerMatchRanking] = [__get_or_create_team(t, match_info, 1 if t == winning_team else 0) for t in parsed_json['teams']]
 
-    # assign winners and losers
+    # assign winners and losers and update ranks
     winners = list(filter(lambda x: x.win == 1, players))
     losers = list(filter(lambda x: x.win == 0, players))
-
-    # update ranks
     new_players: list[PlayerMatchRanking] = __rate_players_for_match(winners=winners, losers=losers)
+
+    if len(teams) == 2:
+        team_winner = list(filter(lambda x: x.win == 1, teams))
+        team_loser = list(filter(lambda x: x.win == 0, teams))
+        new_teams: list[PlayerMatchRanking] = __rate_players_for_match(winners=team_winner, losers=team_loser)
+    else:
+        new_teams: list[PlayerMatchRanking] = []
 
     # update database
     db_dal: IDatabase = MatchRanksAndStatsDAO()
     db_dal.update_ratings(new_players)
+    db_dal.update_ratings(new_teams)
 
     return new_players
 
@@ -95,5 +103,23 @@ def __get_or_create_player(player_dict: dict[str, any], match_info: MatchInfo, w
         login=login,
         overall_rating_and_rank=player_rankings.overall_rating_and_rank,
         map_rating_and_rank=player_rankings.map_rating_and_rank,
+        win=win,
+    )
+
+
+def __get_or_create_team(team: str, match_info: MatchInfo, win: int) -> PlayerMatchRanking:
+    name: str = create_team_name(team)
+    match_user_id: str = generate_match_user_id(name=name, match_id=match_info.match_id)
+
+    db_dal: IDatabase = MatchRanksAndStatsDAO()
+    team_ranking: PlayerRanking = db_dal.get_rating_and_rank(name=name, mode=match_info.mode, match_map=match_info.map)
+
+    return PlayerMatchRanking(
+        match_info=match_info,
+        match_user_id=match_user_id,
+        name=name,
+        login="",
+        overall_rating_and_rank=team_ranking.overall_rating_and_rank,
+        map_rating_and_rank=team_ranking.map_rating_and_rank,
         win=win,
     )
