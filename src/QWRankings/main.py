@@ -3,7 +3,7 @@ import argparse
 from app.dal.database import MatchRanksAndStatsDAO
 from app.processor.match_processor import process_last_n_matches, process_local_data, balance_teams, check_teams
 
-SUPPORTED_MODES: list[str] = ["4on4", "1on1", "2on2"]
+SUPPORTED_MODES: list[str] = ["4on4", "1on1", "2on2", "ALL"]
 
 
 # Run the script for the last 500 games for a given mode

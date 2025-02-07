@@ -18,29 +18,34 @@ logger = logging.getLogger(__name__)
 
 
 def process_last_n_matches(mode: str = '4on4', n: int = 500) -> bool:
+    if mode == 'ALL':
+        modes = ['1on1', '2on2', '4on4']
+    else:
+        modes = [mode]
     if n > 500:
         n = 500
     if n < 1:
         n = 1
-    http_res = requests.post(url="https://ncsphkjfominimxztjip.supabase.co/functions/v1/demos",
-                             headers={"Content-Type": "application/json"},
-                             data=json.dumps({"mode": mode}))
-    str_res = str(http_res.content)[2:]  # Remove Binary b'
-    str_res = str(str_res)[:-1]  # Remove end quote '
-    games = str_res.split('\\n')
-    games.reverse()
-    for http_url in games[500-n:]:
-        request_url = http_url.replace('.gz', '.ktxstats.json')
-        try:
-            with urllib.request.urlopen(request_url) as f:
-                data = f.read()
-                process_match(ktx_json=data, mode=mode)
-        except Exception as e:
-            logger.warning(http_url)
-            if data:
-                logger.warning(data)
-            logger.warning(e)
-            continue
+    for m in modes:
+        http_res = requests.post(url="https://ncsphkjfominimxztjip.supabase.co/functions/v1/demos",
+                                 headers={"Content-Type": "application/json"},
+                                 data=json.dumps({"mode": m}))
+        str_res = str(http_res.content)[2:]  # Remove Binary b'
+        str_res = str(str_res)[:-1]  # Remove end quote '
+        games = str_res.split('\\n')
+        games.reverse()
+        for http_url in games[500-n:]:
+            request_url = http_url.replace('.gz', '.ktxstats.json')
+            try:
+                with urllib.request.urlopen(request_url) as f:
+                    data = f.read()
+                    process_match(ktx_json=data, mode=m)
+            except Exception as e:
+                logger.warning(http_url)
+                if data:
+                    logger.warning(data)
+                logger.warning(e)
+                continue
     return True
 
 
